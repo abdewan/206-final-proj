@@ -6,8 +6,17 @@ import re
 import matplotlib.pyplot as plt
 from bs4 import BeautifulSoup
 import requests
-#from serpapi import GoogleSearch
+from serpapi import GoogleSearch
 
+params = {
+  "engine": "google_scholar_profiles",
+  "mauthors": "Mark Schlissel",
+  "api_key": "cb4afefcf1639be4471e44507bafaeb29e7035b1ae95037c8f65603ab631ea08"
+}
+
+search = GoogleSearch(params)
+results = search.get_dict()
+print(results)
 
 #scrapes the url and returns the html object
 def scrapeUrl(url):
@@ -76,19 +85,19 @@ def addToDatabase(cur, conn, top100):
         id += 1
     conn.commit()
 
-def getScholarIDs(top100):
-    allProfiles = []
-    for person in top100:
-        params = {
-            "engine": "google_scholar_profiles",
-            "mauthors": person[1],
-            "api_key": "cb4afefcf1639be4471e44507bafaeb29e7035b1ae95037c8f65603ab631ea08"
-        }
+# def getScholarIDs(top100):
+#     allProfiles = []
+#     for person in top100:
+#         params = {
+#             "engine": "google_scholar_profiles",
+#             "mauthors": person[1],
+#             "api_key": "cb4afefcf1639be4471e44507bafaeb29e7035b1ae95037c8f65603ab631ea08"
+#         }
 
-        search = google_search(params)
-        results = search.get_dict()
-        profiles = results["profiles"]
-        allProfiles.append(profiles)
+#         search = google_search(params)
+#         results = search.get_dict()
+#         profiles = results["profiles"]
+#         allProfiles.append(profiles)
 
 def createScholarTable(cur, conn, top100):
     pass
@@ -107,7 +116,7 @@ def main():
     cur, conn = setUpDatabase('employeePay')
     addToDatabase(cur, conn, top100)
 
-    getScholarIDs(top100)
+    #getScholarIDs(top100)
 
     # cur2, conn2 = setUpDatabase('googleScholars')
     # createScholarTable(cur2, conn2, top100)
