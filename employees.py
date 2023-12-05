@@ -7,11 +7,12 @@ import matplotlib.pyplot as plt
 from bs4 import BeautifulSoup
 import requests
 
-# from selenium import webdriver
-# from selenium.webdriver.chrome.options import Options
+def setUpDatabase(db_name):
+    path = os.path.dirname(os.path.abspath(__file__))
+    conn = sqlite3.connect(path+'/'+db_name)
+    cur = conn.cursor()
+    return cur, conn
 
-# options = Options()
-# options.headless = True
 
 #scrapes the website using the passed in soup object, returning a list with all instances of the passed tag
 def findTags(html, tag):
@@ -49,6 +50,21 @@ def tableSetUp(html, additional):
         cells2 = findTags(html2, "td")
         cells2[13] = int(cells2[13][2:-3].replace(',', ''))
         topPaid.append((cells2[10], cells2[11], cells2[12], cells2[13]))
+
+    return topPaid
+
+
+def addToDatabase(cur, conn, top100):
+    cur.execute("DROP TABLE IF EXISTS employees")
+    cur.execute("CREATE TABLE IF NOT EXISTS employees (id INTEGER PRIMARY KEY, name TEXT, department TEXT, title TEXT, salary INTEGER)")
+    conn.commit()
+    id = 1
+    for employee in top100:                                                                                                                                                                                      
+        cur.execute('INSERT INTO employees (id, name, department, title, salary) VALUES (?,?,?,?,?)', (id, employee[0], employee[1], employee[2], employee[3]))
+        id += 1
+    conn.commit()
+
+    
         
 def main():
     url = 'https://www.umsalary.info/numbers.php'
@@ -65,6 +81,9 @@ def main():
     additional = ['Luanne Ewald']
 
     top100 = tableSetUp(html, additional)
+
+    cur, conn = setUpDatabase('employeePay')
+    addToDatabase(cur, conn, top100)
     
 
 
