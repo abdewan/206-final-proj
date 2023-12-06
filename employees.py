@@ -9,7 +9,6 @@ import requests
 import serpapi
 
 
-
 #scrapes the url and returns the html object
 def scrapeUrl(url):
     htmls = []
@@ -50,7 +49,7 @@ def tableSetUp(htmls):
             name = cells[i+2]
             #reordering the names to be first middle last 
             match = re.search('(\w+)\s(\D+)', name)
-            name = match.group(1) + ' ' + match.group(2)
+            name = match.group(2) + ' ' + match.group(1)
             title = cells[i+3]
             #converting salaries into ints
             salary = int(cells[i+4][1:-3].replace(',',''))
@@ -66,32 +65,112 @@ def addToDatabase(cur, conn, top100):
     conn.commit()
 
     id = 1
-    for employee in top100:                                                                                                                                                                                
-        cur.execute('INSERT INTO professorPay (id, name, title, salary) VALUES (?,?,?,?)', (id, employee[0], employee[1], employee[2]))
-        id += 1
-    conn.commit()
+    for i in range(4):
+        for j in range(25):
+            cur.execute('INSERT INTO professorPay (id, name, title, salary) VALUES (?,?,?,?)', (id, top100[(25*i)+j][0], top100[(25*i)+j][1], top100[(25*i)+j][2]))                                                                                                                                                                      
+            id += 1
+        conn.commit()
+
+#removes duplicates from the list
+def removeDuplicates(top100):
+    unique = []
+    for prof in top100:
+        if prof[0] in unique:
+            top100.remove(prof)
+        else:
+            unique.append(prof[0])
+    return top100
 
 #we are using this to use each professor's name to access their authorID which can then be used with the profiles API
 #because we only get a limited number of searches with this API, we are storing the search results for 100 professors in an authorIDs.json file
 #adding the pass keyword to the top of this function now that we have the saved .json file so we don't use up more free searches
-def saveAuthorIDs(top100):
-    pass
+# def saveAuthorIDs(top100):
+#     pass
+
+#     authorIDs = []
+#     for professor in top100:
+#         name = professor[0]
+
+#         params = {
+#         "engine": "google_scholar_profiles",
+#         "mauthors": name,
+#         "api_key": "cb4afefcf1639be4471e44507bafaeb29e7035b1ae95037c8f65603ab631ea08"
+#         }
+
+#         results = serpapi.search(params).as_dict()
+#         authorIDs.append(results)
+
+#         with open('authorIDs.json', 'w') as json_file:
+#             json.dump(authorIDs, json_file)
+
+def createAuthorIDTable(cur, conn, filename):
+    f = open(os.path.abspath(os.path.join(os.path.dirname(__file__), filename)))
+    file_data = f.read()
+    f.close()
+    data = json.loads(file_data)
+    #data = data[1:]
 
     authorIDs = []
-    for professor in top100:
-        name = professor[1]
+    for author in data:
+        authorID = author['profiles'][0]['author_id']
+        name = author['profiles'][0]['name']
+        authorIDs.append((authorID, name))
+
+    cur.execute('DROP TABLE IF EXISTS authorIDs')
+    cur.execute('CREATE TABLE IF NOT EXISTS authorIDs (authorID TEXT PRIMARY KEY, name TEXT)')
+    conn.commit()
+
+    for i in range(4):
+        for j in range(25):
+            cur.execute('INSERT INTO authorIDs (authorID, name) VALUES (?,?)', (id, authorIDs[(25*i)+j][0], authorIDs[(25*i)+j][1]))                                                                                                                                                                      
+        conn.commit()
+
+    return authorIDs
+
+#same process as saveAuthorIDs() but different query, now saving their citations and such
+def saveCitations(authorIDs):
+    pass
+
+    citations = []
+    for professor in authorIDs:
+        id = professor[0]
 
         params = {
-        "engine": "google_scholar_profiles",
-        "mauthors": name,
+        "engine": "google_scholar_author",
+        "author_id": id,
         "api_key": "cb4afefcf1639be4471e44507bafaeb29e7035b1ae95037c8f65603ab631ea08"
         }
 
         results = serpapi.search(params).as_dict()
-        authorIDs.append(results)
+        citations.append(results)
 
-        with open('authorIDs.json', 'w') as json_file:
-            json.dump(authorIDs, json_file)
+        with open('citations.json', 'w') as json_file:
+            json.dump(citations, json_file)
+
+def createCitationTable(cur, conn, filename):
+    f = open(os.path.abspath(os.path.join(os.path.dirname(__file__), filename)))
+    file_data = f.read()
+    f.close()
+    data = json.loads(file_data)
+
+    citations = []
+    for author in data:
+        id = author['search_parameters']['author_id']
+        citations = author['cited_by']['table'][0]['all']
+        h_index = author['cited_by']['table'][0]['indice_h']
+        citations.append((id, citations, h_index))
+
+    cur.execute('DROP TABLE IF EXISTS citations')
+    cur.execute('CREATE TABLE IF NOT EXISTS citations (authorID TEXT PRIMARY KEY, citations INTEGER, h_index INTEGER)')
+    conn.commit()
+
+    for i in range(4):
+        for j in range(25):
+            cur.execute('INSERT INTO citations (authorID, citations, h_index) VALUES (?,?,?)', (id, citations[(25*i)+j][0], citations[(25*i)+j][1], citations[(25*i)+j][2]))                                                                                                                                                                      
+        conn.commit()
+
+    return citations
+
 
 def createScholarTable(cur, conn, top100):
     pass
@@ -103,15 +182,18 @@ def main():
     htmls = scrapeUrl('https://www.openthebooks.com/michigan-state-employees/?Year_S=2022&Emp_S=University%2Bof%2BMichigan%2Bat%2BAnn%2BArbor')
 
     top100 = tableSetUp(htmls)
+    top100 = removeDuplicates(top100)
+    #filter only top 100 from list 
     top100 = top100[:100]
 
     cur, conn = setUpDatabase('professors.db')
     addToDatabase(cur, conn, top100)
 
-    saveAuthorIDs(top100)
+    #saveAuthorIDs(top100)
+    #authorIDs = createAuthorIDTable(cur, conn, 'authorIDs.json')
 
-    # cur2, conn2 = setUpDatabase('googleScholars')
-    # createScholarTable(cur2, conn2, top100)
+    #saveCitations(authorIDs)
+    #citations = createCitationTable(cur, conn, 'citations.json')
     
 
 
