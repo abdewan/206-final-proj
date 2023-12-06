@@ -8,13 +8,6 @@ from bs4 import BeautifulSoup
 import requests
 import serpapi
 
-params = {
-  "engine": "google_scholar_profiles",
-  "mauthors": "Mark Schlissel",
-  "api_key": "cb4afefcf1639be4471e44507bafaeb29e7035b1ae95037c8f65603ab631ea08"
-}
-
-results = serpapi.search(params).as_dict()
 
 
 #scrapes the url and returns the html object
@@ -68,29 +61,37 @@ def tableSetUp(htmls):
 
 #adds the employee data in the top 100 list into the database
 def addToDatabase(cur, conn, top100):
-    cur.execute("DROP TABLE IF EXISTS professors")
-    cur.execute("CREATE TABLE IF NOT EXISTS professors (id INTEGER PRIMARY KEY, name TEXT, title TEXT, salary INTEGER)")
+    cur.execute("DROP TABLE IF EXISTS professorPay")
+    cur.execute("CREATE TABLE IF NOT EXISTS professorPay (id INTEGER PRIMARY KEY, name TEXT, title TEXT, salary INTEGER)")
     conn.commit()
 
     id = 1
     for employee in top100:                                                                                                                                                                                
-        cur.execute('INSERT INTO professors (id, name, title, salary) VALUES (?,?,?,?)', (id, employee[0], employee[1], employee[2]))
+        cur.execute('INSERT INTO professorPay (id, name, title, salary) VALUES (?,?,?,?)', (id, employee[0], employee[1], employee[2]))
         id += 1
     conn.commit()
 
-# def getScholarIDs(top100):
-#     allProfiles = []
-#     for person in top100:
-#         params = {
-#             "engine": "google_scholar_profiles",
-#             "mauthors": person[1],
-#             "api_key": "cb4afefcf1639be4471e44507bafaeb29e7035b1ae95037c8f65603ab631ea08"
-#         }
+#we are using this to use each professor's name to access their authorID which can then be used with the profiles API
+#because we only get a limited number of searches with this API, we are storing the search results for 100 professors in an authorIDs.json file
+#adding the pass keyword to the top of this function now that we have the saved .json file so we don't use up more free searches
+def saveAuthorIDs(top100):
+    pass
 
-#         search = google_search(params)
-#         results = search.get_dict()
-#         profiles = results["profiles"]
-#         allProfiles.append(profiles)
+    authorIDs = []
+    for professor in top100:
+        name = professor[1]
+
+        params = {
+        "engine": "google_scholar_profiles",
+        "mauthors": name,
+        "api_key": "cb4afefcf1639be4471e44507bafaeb29e7035b1ae95037c8f65603ab631ea08"
+        }
+
+        results = serpapi.search(params).as_dict()
+        authorIDs.append(results)
+
+        with open('authorIDs.json', 'w') as json_file:
+            json.dump(authorIDs, json_file)
 
 def createScholarTable(cur, conn, top100):
     pass
@@ -102,11 +103,12 @@ def main():
     htmls = scrapeUrl('https://www.openthebooks.com/michigan-state-employees/?Year_S=2022&Emp_S=University%2Bof%2BMichigan%2Bat%2BAnn%2BArbor')
 
     top100 = tableSetUp(htmls)
+    top100 = top100[:100]
 
-    cur, conn = setUpDatabase('professorPay.db')
+    cur, conn = setUpDatabase('professors.db')
     addToDatabase(cur, conn, top100)
 
-    #getScholarIDs(top100)
+    saveAuthorIDs(top100)
 
     # cur2, conn2 = setUpDatabase('googleScholars')
     # createScholarTable(cur2, conn2, top100)
