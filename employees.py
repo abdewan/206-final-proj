@@ -14,7 +14,7 @@ from scholarly import scholarly
 #scrapes the url and returns the html object
 def scrapeUrl(url):
     htmls = []
-    for i in range(4):
+    for i in range(5):
         params={'pg' : i}
         response = requests.get(url, params=params)
         if response.status_code == 200:
