@@ -62,7 +62,6 @@ def tableSetUp(htmls):
 
 #adds the employee data in the top 100 list into the database 25 rows at a time.
 def addToDatabase(cur, conn, top100):
-    print(len(top100))
     #cur.execute("DROP TABLE IF EXISTS professorPay")
     cur.execute("CREATE TABLE IF NOT EXISTS professorPay (id INTEGER PRIMARY KEY, name TEXT, title TEXT, salary INTEGER, scholar_id TEXT)")
     conn.commit()
@@ -162,7 +161,7 @@ def saveCitations(cur):
 
     with open('citations.json', 'w') as json_file:
         json.dump(citations, json_file)
-
+#parses through citations.json to extract each author's number of citations, h-index, and interests
 def createCitationTable(cur, conn, filename):
     f = open(os.path.abspath(os.path.join(os.path.dirname(__file__), filename)))
     file_data = f.read()
@@ -174,10 +173,16 @@ def createCitationTable(cur, conn, filename):
         id = author['search_parameters']['author_id']
         numCitations = author['cited_by']['table'][0]['citations']['all']
         h_index = author['cited_by']['table'][1]['h_index']['all']
-        citations.append((id, numCitations, h_index))
+        try:
+            match = author['author']['interests']
+            interests = match[0]['title'] + ', ' + match[1]['title'] + ', ' + match[2]['title']
+        except:
+            interests = 'N/A' + ', ' + 'N/A' + ', ' + 'N/A'
+
+        citations.append((id, numCitations, h_index, interests))
 
     #cur.execute('DROP TABLE IF EXISTS citations')
-    cur.execute('CREATE TABLE IF NOT EXISTS citations (authorID TEXT PRIMARY KEY, citations INTEGER, h_index INTEGER)')
+    cur.execute('CREATE TABLE IF NOT EXISTS citations (id INTEGER PRIMARY KEY, citations INTEGER, h_index INTEGER, interests TEXT)')
     conn.commit()
 
 
@@ -188,17 +193,30 @@ def createCitationTable(cur, conn, filename):
     curIdx = result[0]
     if (curIdx > 0):
         for i in range(curIdx, curIdx + 25):
-            cur.execute('INSERT INTO citations (authorID, citations, h_index) VALUES (?,?,?)', (citations[i][0], citations[i][1], citations[i][2]))
+            cur.execute('INSERT INTO citations (id, citations, h_index, interests) VALUES (?,?,?,?)', (i+1, citations[i][1], citations[i][2], citations[i][3]))
     else:
         #insert for the first time
         for i in range(0, 25):
-            cur.execute('INSERT INTO citations (authorID, citations, h_index) VALUES (?,?,?)', (citations[i][0], citations[i][1], citations[i][2]))
+            cur.execute('INSERT INTO citations (id, citations, h_index, interests) VALUES (?,?,?,?)', (i+1, citations[i][1], citations[i][2], citations[i][3]))
     conn.commit()
-
-
-def createScholarTable(cur, conn, top100):
-    pass
-
+#finds the 5 most common words in the 'interests' section for the top 100 professors (only including the ones with interests sections)
+def findCommonInterests(cur):
+    counter = {}
+    cur.execute('SELECT interests FROM citations WHERE interests != ?', ('N/A, N/A, N/A',))
+    rows = cur.fetchall()
+    for prof in rows:
+        words = prof[0].split(' ')
+        for word in words:
+            #getting rid of the comma
+            counter[word] = counter.get(word, 0) + 1
+    counter = sorted(counter.items(), key=lambda x:x[1], reverse=True)
+    print('The most common words in the interests section are:')
+    #skipping index 0 because it was 'and'
+    print('1)', counter[1])
+    print('2)', counter[2])
+    print('3)', counter[3])
+    print('4)', counter[4])
+    print('5)', counter[5])
     
         
 def main():
@@ -207,8 +225,6 @@ def main():
 
     profs = tableSetUp(htmls)
     profs = removeDuplicates(profs)
-    #filter only top 100 from list 
-    #top100 = top100[:100]
 
     cur, conn = setUpDatabase('professors.db')
     print(len(profs))
@@ -221,8 +237,9 @@ def main():
 
     #commenting out so we don't keep running the api 
     #saveCitations(cur)
-    createCitationTable(cur, conn, 'citations.json')
+    #createCitationTable(cur, conn, 'citations.json')
     
+    findCommonInterests(cur)
 
 
 
