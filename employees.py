@@ -217,7 +217,15 @@ def findCommonInterests(cur):
     print('3)', counter[3])
     print('4)', counter[4])
     print('5)', counter[5])
-    
+
+def findMostCited(cur):
+    cur.execute('SELECT professorPay.name, MAX(citations.citations) FROM citations JOIN professorPay ON professorPay.id = citations.id')
+    result = cur.fetchone()
+    print('The most cited professor is', result[0], 'with', result[1], 'citations.')
+    cur.execute('SELECT professorPay.id, professorPay.salary, professorPay.name, MAX(citations.h_index) FROM citations JOIN professorPay ON professorPay.id = citations.id')
+    result = cur.fetchone()
+    print('The professor with the highest h-index is', result[2], 'with a h_index of', result[3])
+    print('Stephen Forrest makes an annual salary of', result[1], 'which is rank', result[0], 'out of our database of highly paid professors')
         
 def main():
 
@@ -240,6 +248,7 @@ def main():
     #createCitationTable(cur, conn, 'citations.json')
     
     findCommonInterests(cur)
+    findMostCited(cur)
 
 
 
