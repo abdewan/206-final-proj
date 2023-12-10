@@ -125,10 +125,7 @@ def saveAuthorIDs(top100):
         except:
             counter += 1
             print('removing', professor)
-            
-        
-        #print(result['scholar_id'])
-        #authorIDs.append((name, professor[1], professor[2], 'n/a'))
+
     print('removed', counter)
     return authorIDs
     
@@ -159,7 +156,7 @@ def saveCitations(cur):
         i+=1
         citations.append(results)
 
-    with open('citations.json', 'w') as json_file:
+    with open('citations.json', 'a') as json_file:
         json.dump(citations, json_file)
 #parses through citations.json to extract each author's number of citations, h-index, and interests
 def createCitationTable(cur, conn, filename):
@@ -200,7 +197,7 @@ def createCitationTable(cur, conn, filename):
             cur.execute('INSERT INTO citations (id, citations, h_index, interests) VALUES (?,?,?,?)', (i+1, citations[i][1], citations[i][2], citations[i][3]))
     conn.commit()
 #finds the 5 most common words in the 'interests' section for the top 100 professors (only including the ones with interests sections)
-def findCommonInterests(cur):
+def processData(cur):
     counter = {}
     cur.execute('SELECT interests FROM citations WHERE interests != ?', ('N/A, N/A, N/A',))
     rows = cur.fetchall()
@@ -210,22 +207,27 @@ def findCommonInterests(cur):
             #getting rid of the comma
             counter[word] = counter.get(word, 0) + 1
     counter = sorted(counter.items(), key=lambda x:x[1], reverse=True)
-    print('The most common words in the interests section are:')
-    #skipping index 0 because it was 'and'
-    print('1)', counter[1])
-    print('2)', counter[2])
-    print('3)', counter[3])
-    print('4)', counter[4])
-    print('5)', counter[5])
 
-def findMostCited(cur):
-    cur.execute('SELECT professorPay.name, MAX(citations.citations) FROM citations JOIN professorPay ON professorPay.id = citations.id')
-    result = cur.fetchone()
-    print('The most cited professor is', result[0], 'with', result[1], 'citations.')
-    cur.execute('SELECT professorPay.id, professorPay.salary, professorPay.name, MAX(citations.h_index) FROM citations JOIN professorPay ON professorPay.id = citations.id')
-    result = cur.fetchone()
-    print('The professor with the highest h-index is', result[2], 'with a h_index of', result[3])
-    print('Stephen Forrest makes an annual salary of', result[1], 'which is rank', result[0], 'out of our database of highly paid professors')
+    with open('/Users/akashdewan/Downloads/SI-206/final-proj/206-final-proj/results.txt', 'w') as out_file:
+
+        out_file.write('The most common words in the interests section are:\n')
+        #skipping index 0 because it was 'and'
+        out_file.write(f'1) {counter[1]}\n')
+        out_file.write(f'2) {counter[2]}\n')
+        out_file.write(f'3) {counter[3]}\n')
+        out_file.write(f'4) {counter[4]}\n')
+        out_file.write(f'5) {counter[5]}\n')
+
+        #now find the professor with the most citations
+        cur.execute('SELECT professorPay.name, MAX(citations.citations) FROM citations JOIN professorPay ON professorPay.id = citations.id')
+        result = cur.fetchone()
+        out_file.write(f'The most cited professor is {result[0]} with {result[1]} citations.\n')
+        #find professor with highest h-index
+        cur.execute('SELECT professorPay.id, professorPay.salary, professorPay.name, MAX(citations.h_index) FROM citations JOIN professorPay ON professorPay.id = citations.id')
+        result = cur.fetchone()
+        out_file.write(f'The professor with the highest h-index is {result[2]} with a h_index of {result[3]}.\n')
+        out_file.write(f'Stephen Forrest makes an annual salary of {result[1]} which is rank {result[0]} out of our database of highly paid professors.\n')
+    
         
 def main():
 
@@ -247,8 +249,7 @@ def main():
     #saveCitations(cur)
     #createCitationTable(cur, conn, 'citations.json')
     
-    findCommonInterests(cur)
-    findMostCited(cur)
+    processData(cur)
 
 
 
