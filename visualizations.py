@@ -1,7 +1,11 @@
+from wordcloud import WordCloud, STOPWORDS
 import matplotlib.pyplot as plt
+import pandas as pd
 import os
 import sqlite3
-import unittest
+
+
+
 
 
 def load_employees_data(db):
@@ -85,13 +89,41 @@ def highest_paid_vs_h_index(dictionary):
 
     plt.show()
 
-def professor_vs_interest():
+def professor_vs_interest(db):
     """
-    This function accepts the filename of the database as a parameter and creates a dictionary. Each key
-    is the name of the professor and each value is the 5 most common words in the 'interest' section for
-    the professors. It then creates a 
+    This function accepts the filename of the database as a parameter and creates a string of words 
+    from the interest column of the citations table. Then, use wordcloud and matplot to create a
+    word map coresponding to the frequency of the words used.
     """
-    pass
+    conn = sqlite3.connect(db)
+    cur = conn.cursor()
+    cur.execute('SELECT interests FROM citations WHERE interests != ?', ('N/A, N/A, N/A',))
+
+
+
+    comment_words = ''
+
+    rows = cur.fetchall()
+    for prof in rows:
+        words = prof[0].split(' ')
+        for word in words:
+            #make all words lowercase
+            word = word.lower()
+            #getting rid of the comma
+            if ',' in word:
+                word = word[:-1]
+            comment_words += word + ' '
+
+    wordcloud = WordCloud(width = 800, height = 800,
+                background_color ='white',
+                min_font_size = 10).generate(comment_words)
+
+    plt.figure(figsize = (8, 8), facecolor = None)
+    plt.imshow(wordcloud)
+    plt.axis("off")
+    plt.tight_layout(pad = 0)
+ 
+    plt.show()
 
 
 def main():
@@ -103,8 +135,8 @@ def main():
     data = load_employees_data(full_path)
     highest_paid(data)
     highest_paid_vs_citations(data)
-    
-
+    highest_paid_vs_h_index(data)
+    professor_vs_interest(full_path)
 
 
 if __name__ == "__main__":
