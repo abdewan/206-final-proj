@@ -146,10 +146,10 @@ def saveAuthorIDs(top100):
     print('removed', counter)
     return authorIDs
     
-#same process as saveAuthorIDs() but different query, now saving their citations and such
 def saveCitations(cur):
     '''
-        this function r
+        For each professor in the table, this function creates a google search query using the Serpapi google scholar API to access
+        each professor's author profile and saving the json data for each professor to citations.json
     '''
     citations = []
 
@@ -175,8 +175,13 @@ def saveCitations(cur):
 
     with open('citations.json', 'a') as json_file:
         json.dump(citations, json_file)
-#parses through citations.json to extract each author's number of citations, h-index, and interests
+
 def createCitationTable(cur, conn, filename):
+    '''
+        Parses through the passed .json file (in this case, citations.json) to access each professor's number of citations,
+        h-index, and list of interests (if applicable). It then creates a citations table in our database and adds all the relevant
+        information into it
+    '''
     f = open(os.path.abspath(os.path.join(os.path.dirname(__file__), filename)))
     file_data = f.read()
     f.close()
@@ -213,8 +218,12 @@ def createCitationTable(cur, conn, filename):
         for i in range(0, 25):
             cur.execute('INSERT INTO citations (id, citations, h_index, interests) VALUES (?,?,?,?)', (i+1, citations[i][1], citations[i][2], citations[i][3]))
     conn.commit()
-#finds the 5 most common words in the 'interests' section for the top 100 professors (only including the ones with interests sections)
+
 def processData(cur):
+    '''
+        This function processes our data in a few different ways. It finds the 5 most common words in the interests section of the google scholar
+        profiles. It also finds the professor with the most citations and highest h-index. It writes all of this information to a results.txt file
+    '''
     counter = {}
     cur.execute('SELECT interests FROM citations WHERE interests != ?', ('N/A, N/A, N/A',))
     rows = cur.fetchall()
