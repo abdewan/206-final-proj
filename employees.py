@@ -9,10 +9,11 @@ import requests
 import serpapi
 from scholarly import scholarly
 
-# query = scholarly.search_author('Duderstadt, Michigan')
-# scholarly.pprint(next(query))
-#scrapes the url and returns the html object
 def scrapeUrl(url):
+    '''
+        This function scrapes the passed url and returns an html object
+    '''
+
     htmls = []
     for i in range(5):
         params={'pg' : i}
@@ -23,16 +24,21 @@ def scrapeUrl(url):
             print("Failed to retrieve the web page.")
     return htmls
 
-#creates a database with the passed name
 def setUpDatabase(db_name):
+    '''
+        given the passed database name, this function established a SQLite connection
+        and returns the cursor and connection objects
+    '''
     path = os.path.dirname(os.path.abspath(__file__))
     conn = sqlite3.connect(path+'/'+db_name)
     cur = conn.cursor()
     return cur, conn
 
-
-#scrapes the website using the passed in soup object, returning a list with all instances of the passed tag
 def findTags(html, tag):
+    '''
+        Given the passed html text and desired tag, this function creates a BeautifulSoup object 
+        and parses the html, returning a list of html matches for the passed tag
+    '''
     soup = BeautifulSoup(html, 'html.parser')
     tags = soup.find_all(tag)
     cells = []
@@ -41,8 +47,11 @@ def findTags(html, tag):
         cells.append(value)
     return cells
 
-#Sets up the table of top 100 highest paid employees and returns a list of tuples
 def tableSetUp(htmls):
+    '''
+        Given a list of the html matches for the relevant tag, this function iterates over this list
+        and extracts each professor's name, job title, and salary, returning a list of tuples with this data
+    '''
     topPaid = []
     for html in htmls:
         cells = findTags(html, "td")
@@ -60,8 +69,11 @@ def tableSetUp(htmls):
 
     return topPaid
 
-#adds the employee data in the top 100 list into the database 25 rows at a time.
 def addToDatabase(cur, conn, top100):
+    '''
+        Given the cursor, connection, and list of tuples for each professor, this function creates our 'professorPay'
+        table and adds professors into the table by 25's    
+    '''
     #cur.execute("DROP TABLE IF EXISTS professorPay")
     cur.execute("CREATE TABLE IF NOT EXISTS professorPay (id INTEGER PRIMARY KEY, name TEXT, title TEXT, salary INTEGER, scholar_id TEXT)")
     conn.commit()
@@ -88,9 +100,10 @@ def addToDatabase(cur, conn, top100):
     #     id += 1
     # conn.commit()
 
-
-#removes duplicates from the list
 def removeDuplicates(top100):
+    '''
+        this function takes in a list of the top paid professors and returns the same list without duplicates
+    '''
     unique = []
     for prof in top100:
         if prof[0] in unique:
@@ -101,7 +114,11 @@ def removeDuplicates(top100):
 
 
 def saveAuthorIDs(top100):
-
+    '''
+        this function iterates througfh each professor in the passed list, extracts each name in a FirstName LastName format,
+        and performs a google scholar query using the scholarly package, returning a new list with the same information as the 
+        passed list, but with each professor's scholar_id in addition. it skips over all the professors for which a search was unsuccessful.
+    '''
     authorIDs = []
     counter = 0
     i=1
@@ -129,11 +146,11 @@ def saveAuthorIDs(top100):
     print('removed', counter)
     return authorIDs
     
-
-
 #same process as saveAuthorIDs() but different query, now saving their citations and such
 def saveCitations(cur):
-
+    '''
+        this function r
+    '''
     citations = []
 
     cur.execute('SELECT scholar_id FROM professorPay')
@@ -204,13 +221,17 @@ def processData(cur):
     for prof in rows:
         words = prof[0].split(' ')
         for word in words:
+            #make all words lowercase
+            word = word.lower()
             #getting rid of the comma
+            if ',' in word:
+                word = word[:-1]
             counter[word] = counter.get(word, 0) + 1
     counter = sorted(counter.items(), key=lambda x:x[1], reverse=True)
 
     with open('/Users/akashdewan/Downloads/SI-206/final-proj/206-final-proj/results.txt', 'w') as out_file:
 
-        out_file.write('The most common words in the interests section are:\n')
+        out_file.write('The most common words in the interests section areeee:\n')
         #skipping index 0 because it was 'and'
         out_file.write(f'1) {counter[1]}\n')
         out_file.write(f'2) {counter[2]}\n')
