@@ -1,0 +1,9 @@
+The most common words in the interests section are:
+1) ('economics', 8)
+2) ('theory', 7)
+3) ('health', 6)
+4) ('information', 5)
+5) ('finance', 5)
+The most cited professor is Stephen Forrest with 176121 citations.
+The professor with the highest h-index is Stephen Forrest with a h_index of 182.
+Stephen Forrest makes an annual salary of 369267 which is rank 30 out of our database of highly paid professors.
