@@ -4,10 +4,6 @@ import pandas as pd
 import os
 import sqlite3
 
-
-
-
-
 def load_employees_data(db):
     """
     This function accepts the filename of the database as a parameter, and returns a nested dictionary. Each outer 
@@ -51,7 +47,7 @@ def highest_paid(dictionary):
     plt.hist(salaries, bins=10, edgecolor='black')
     plt.xlabel('Salary Range')
     plt.ylabel('Number of Employees')
-    plt.title('Histogram of Employee Salaries')
+    plt.title('Histogram of Salaries for the 100 Highest Paid Professors')
 
     plt.show()
 
@@ -92,14 +88,13 @@ def highest_paid_vs_h_index(dictionary):
 def professor_vs_interest(db):
     """
     This function accepts the filename of the database as a parameter and creates a string of words 
-    from the interest column of the citations table. Then, use wordcloud and matplot to create a
-    word map coresponding to the frequency of the words used.
+    from the interest column of the citations table. The string of words do not contain 'N/A' words 
+    and strips all ',' or '(' or ')' characters. Then, use wordcloud and matplot to create a word 
+    map coresponding to the frequency of the words used.
     """
     conn = sqlite3.connect(db)
     cur = conn.cursor()
     cur.execute('SELECT interests FROM citations WHERE interests != ?', ('N/A, N/A, N/A',))
-
-
 
     comment_words = ''
 
@@ -137,7 +132,6 @@ def main():
     highest_paid_vs_citations(data)
     highest_paid_vs_h_index(data)
     professor_vs_interest(full_path)
-
 
 if __name__ == "__main__":
     main()
