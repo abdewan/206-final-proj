@@ -74,8 +74,8 @@ def addToDatabase(cur, conn, top100):
         Given the cursor, connection, and list of tuples for each professor, this function creates our 'professorPay'
         table and adds professors into the table by 25's    
     '''
-    #cur.execute("DROP TABLE IF EXISTS professorPay")
-    cur.execute("CREATE TABLE IF NOT EXISTS professorPay (id INTEGER PRIMARY KEY, name TEXT, title TEXT, salary INTEGER, scholar_id TEXT)")
+    cur.execute("DROP TABLE IF EXISTS professorPay")
+    cur.execute("CREATE TABLE IF NOT EXISTS professorPay (id INTEGER PRIMARY KEY, name TEXT, salary INTEGER, scholar_id TEXT)")
     conn.commit()
     
     #get number of rows
@@ -87,14 +87,14 @@ def addToDatabase(cur, conn, top100):
         results = cur.fetchall()
         curIdx = results[-1][0]
         for i in range(curIdx, curIdx + 25):
-            cur.execute('INSERT INTO professorPay (id, name, title, salary, scholar_id) VALUES (?,?,?,?,?)', (i+1, top100[i][0], top100[i][1], top100[i][2], top100[i][3]))
+            cur.execute('INSERT INTO professorPay (id, name, salary, scholar_id) VALUES (?,?,?,?)', (i+1, top100[i][0], top100[i][2], top100[i][3]))
     else:
         #insert for the first time
         for i in range(0, 25):
-            cur.execute('INSERT INTO professorPay (id, name, title, salary, scholar_id) VALUES (?,?,?,?,?)', (i+1, top100[i][0], top100[i][1], top100[i][2], top100[i][3]))
+            cur.execute('INSERT INTO professorPay (id, name, salary, scholar_id) VALUES (?,?,?,?)', (i+1, top100[i][0], top100[i][2], top100[i][3]))
     # id=1
     # for prof in top100:
-    #     cur.execute('INSERT INTO professorPay (id, name, title, salary, scholar_id) VALUES (?,?,?,?,?)', (id, prof[0], prof[1], prof[2], prof[3]))
+    #     cur.execute('INSERT INTO professorPay (id, name, salary, scholar_id) VALUES (?,?,?,?)', (id, prof[0], prof[2], prof[3]))
     #     id += 1
     # conn.commit()
 
@@ -266,8 +266,8 @@ def main():
     print(len(profs))
 
     #commenting out because we have our complete database and don't need to keep scraping the url every time, it takes a while
-    #top100 = saveAuthorIDs(profs)
-    #addToDatabase(cur, conn, top100)
+    top100 = saveAuthorIDs(profs)
+    addToDatabase(cur, conn, top100)
 
     #authorIDs = scrapeAuthorIDs(url, top100)
 
@@ -275,7 +275,7 @@ def main():
     #saveCitations(cur)
     #createCitationTable(cur, conn, 'citations.json')
     
-    processData(cur)
+    #processData(cur)
 
 
 
