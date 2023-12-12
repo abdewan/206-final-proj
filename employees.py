@@ -81,13 +81,11 @@ def addToDatabase(cur, conn, top100):
     #get number of rows
     cur.execute('SELECT COUNT(*) FROM professorPay')
     result = cur.fetchone()
-    print('num rows:', result[0])
     #check if empty
     if (result[0] > 0):
         cur.execute('SELECT id FROM professorPay')
         results = cur.fetchall()
         curIdx = results[-1][0]
-        print('current index:', curIdx)
         for i in range(curIdx, curIdx + 25):
             cur.execute('INSERT INTO professorPay (id, name, title, salary, scholar_id) VALUES (?,?,?,?,?)', (i+1, top100[i][0], top100[i][1], top100[i][2], top100[i][3]))
     else:
@@ -111,7 +109,6 @@ def removeDuplicates(top100):
         else:
             unique.append(prof[0])
     return top100
-
 
 def saveAuthorIDs(top100):
     '''
@@ -169,7 +166,6 @@ def saveCitations(cur):
         }
 
         results = serpapi.search(params).as_dict()
-        print(i)
         i+=1
         citations.append(results)
 
@@ -240,7 +236,7 @@ def processData(cur):
 
     with open('/Users/akashdewan/Downloads/SI-206/final-proj/206-final-proj/results.txt', 'w') as out_file:
 
-        out_file.write('The most common words in the interests section areeee:\n')
+        out_file.write('The most common words in the interests section are:\n')
         #skipping index 0 because it was 'and'
         out_file.write(f'1) {counter[1]}\n')
         out_file.write(f'2) {counter[2]}\n')
@@ -268,12 +264,12 @@ def main():
 
     cur, conn = setUpDatabase('professors.db')
     print(len(profs))
+
     #commenting out because we have our complete database and don't need to keep scraping the url every time, it takes a while
     #top100 = saveAuthorIDs(profs)
     #addToDatabase(cur, conn, top100)
 
     #authorIDs = scrapeAuthorIDs(url, top100)
-    #print(authorIDs)
 
     #commenting out so we don't keep running the api 
     #saveCitations(cur)
